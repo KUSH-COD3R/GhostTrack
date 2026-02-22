@@ -12,7 +12,6 @@ import time
 import os
 import phonenumbers
 from phonenumbers import carrier, geocoder, timezone
-from sys import stderr
 
 Bl = '\033[30m'  # VARIABLE BUAT WARNA CUYY
 Re = '\033[1;31m'
@@ -29,9 +28,7 @@ Wh = '\033[1;37m'
 # decorator for attaching run_banner to a function
 def is_option(func):
     def wrapper(*args, **kwargs):
-        run_banner()
         func(*args, **kwargs)
-
 
     return wrapper
 
@@ -42,9 +39,15 @@ def IP_Track():
     ip = input(f"{Wh}\n Enter IP target : {Gr}")  # INPUT IP ADDRESS
     print()
     print(f' {Wh}============= {Gr}SHOW INFORMATION IP ADDRESS {Wh}=============')
-    req_api = requests.get(f"http://ipwho.is/{ip}")  # API IPWHOIS.IS
+    req_api = requests.get(f"http://ipwho.is/{ip}")
+    if req_api.status_code != 200:
+        print(f"{Re}Error: Invalid IP address or API error")
+        return
     ip_data = json.loads(req_api.text)
-    time.sleep(2)
+    if not ip_data.get("success", True):
+        print(f"{Re}Error: {ip_data.get('message', 'Invalid IP')}")
+        return
+    time.sleep(0.5)
     print(f"{Wh}\n IP target       :{Gr}", ip)
     print(f"{Wh} Type IP         :{Gr}", ip_data["type"])
     print(f"{Wh} Country         :{Gr}", ip_data["country"])
@@ -56,8 +59,8 @@ def IP_Track():
     print(f"{Wh} Region Code     :{Gr}", ip_data["region_code"])
     print(f"{Wh} Latitude        :{Gr}", ip_data["latitude"])
     print(f"{Wh} Longitude       :{Gr}", ip_data["longitude"])
-    lat = int(ip_data['latitude'])
-    lon = int(ip_data['longitude'])
+    lat = ip_data['latitude']
+    lon = ip_data['longitude']
     print(f"{Wh} Maps            :{Gr}", f"https://www.google.com/maps/@{lat},{lon},8z")
     print(f"{Wh} EU              :{Gr}", ip_data["is_eu"])
     print(f"{Wh} Postal          :{Gr}", ip_data["postal"])
@@ -74,7 +77,7 @@ def IP_Track():
     print(f"{Wh} DST             :{Gr}", ip_data["timezone"]["is_dst"])
     print(f"{Wh} Offset          :{Gr}", ip_data["timezone"]["offset"])
     print(f"{Wh} UTC             :{Gr}", ip_data["timezone"]["utc"])
-    print(f"{Wh} Current Time    :{Gr}", ip_data["timezone"]["current_time"])
+    print(f"{Wh} Current Time    :{Gr}", ip_data["timezone"].get("current_time", "N/A"))
 
 
 @is_option
@@ -168,8 +171,8 @@ def TrackLu():
 
 @is_option
 def showIP():
-    respone = requests.get('https://api.ipify.org/')
-    Show_IP = respone.text
+    response = requests.get('https://api.ipify.org/')
+    Show_IP = response.text
 
     print(f"\n {Wh}========== {Gr}SHOW INFORMATION YOUR IP {Wh}==========")
     print(f"\n {Wh}[{Gr} + {Wh}] Your IP Adrress : {Gr}{Show_IP}")
@@ -230,7 +233,10 @@ def call_option(opt):
 def execute_option(opt):
     try:
         call_option(opt)
-        input(f'\n{Wh}[ {Gr}+ {Wh}] {Gr}Press enter to continue')
+        try:
+            input(f'\n{Wh}[ {Gr}+ {Wh}] {Gr}Press enter to continue')
+        except EOFError:
+            return
         main()
     except ValueError as e:
         print(e)
@@ -257,40 +263,22 @@ def is_in_options(num):
 
 
 def option():
-    # BANNER TOOLS
     clear()
-    stderr.writelines(f"""
+    print("""
        ________               __      ______                __  
       / ____/ /_  ____  _____/ /_    /_  __/________ ______/ /__
-     / / __/ __ \/ __ \/ ___/ __/_____/ / / ___/ __ `/ ___/ //_/
+     / / __/ __ \\/ __ \\/ ___/ __/_____/ / / ___/ __ `/ ___/ //_/
     / /_/ / / / / /_/ (__  ) /_/_____/ / / /  / /_/ / /__/ ,<   
-    \____/_/ /_/\____/____/\__/     /_/ /_/   \__,_/\___/_/|_| 
+    \\____/_/ /_/\\____/____/\\__/     /_/ /_/   \\__,_/\\___/_/|_| 
 
               {Wh}[ + ]  C O D E   B Y  H U N X  [ + ]
-    """)
+    """.replace("{Wh}", Wh).replace("{Gr}", Gr))
 
-    stderr.writelines(f"\n\n\n{option_text()}")
+    print(f"\n\n\n{option_text()}")
 
 
 def run_banner():
-    clear()
-    time.sleep(1)
-    stderr.writelines(f"""{Wh}
-         .-.
-       .'   `.          {Wh}--------------------------------
-       :g g   :         {Wh}| {Gr}GHOST - TRACKER - IP ADDRESS {Wh}|
-       : o    `.        {Wh}|       {Gr}@CODE BY HUNXBYTS      {Wh}|
-      :         ``.     {Wh}--------------------------------
-     :             `.
-    :  :         .   `.
-    :   :          ` . `.
-     `.. :            `. ``;
-        `:;             `:'
-           :              `.
-            `.              `.     .
-              `'`'`'`---..,___`;.-'
-        """)
-    time.sleep(0.5)
+    pass
 
 
 def main():
@@ -298,12 +286,19 @@ def main():
     option()
     time.sleep(1)
     try:
-        opt = int(input(f"{Wh}\n [ + ] {Gr}Select Option : {Wh}"))
+        opt = input(f"{Wh}\n [ + ] {Gr}Select Option : {Wh}")
+        if not opt:
+            main()
+            return
+        opt = int(opt)
         execute_option(opt)
     except ValueError:
         print(f'\n{Wh}[ {Re}! {Wh}] {Re}Please input number')
         time.sleep(2)
         main()
+    except EOFError:
+        print(f'\n{Wh}[ {Re}! {Wh}] {Re}Exit')
+        exit()
 
 
 if __name__ == '__main__':

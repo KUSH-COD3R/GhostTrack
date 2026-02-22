@@ -39,7 +39,7 @@ def IP_Track():
     ip = input(f"{Wh}\n Enter IP target : {Gr}")  # INPUT IP ADDRESS
     print()
     print(f' {Wh}============= {Gr}SHOW INFORMATION IP ADDRESS {Wh}=============')
-    req_api = requests.get(f"http://ipwho.is/{ip}")
+    req_api = requests.get(f"http://ipwho.is/{ip}", timeout=10)
     if req_api.status_code != 200:
         print(f"{Re}Error: Invalid IP address or API error")
         return
@@ -84,20 +84,25 @@ def IP_Track():
 def phoneGW():
     User_phone = input(
         f"\n {Wh}Enter phone number target {Gr}Ex [+6281xxxxxxxxx] {Wh}: {Gr}")  # INPUT NUMBER PHONE
-    default_region = "ID"  # DEFAULT NEGARA INDONESIA
+    
+    try:
+        default_region = "ID"  # DEFAULT NEGARA INDONESIA
 
-    parsed_number = phonenumbers.parse(User_phone, default_region)  # VARIABLE PHONENUMBERS
-    region_code = phonenumbers.region_code_for_number(parsed_number)
-    jenis_provider = carrier.name_for_number(parsed_number, "en")
-    location = geocoder.description_for_number(parsed_number, "id")
-    is_valid_number = phonenumbers.is_valid_number(parsed_number)
-    is_possible_number = phonenumbers.is_possible_number(parsed_number)
-    formatted_number = phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
-    formatted_number_for_mobile = phonenumbers.format_number_for_mobile_dialing(parsed_number, default_region,
-                                                                                with_formatting=True)
-    number_type = phonenumbers.number_type(parsed_number)
-    timezone1 = timezone.time_zones_for_number(parsed_number)
-    timezoneF = ', '.join(timezone1)
+        parsed_number = phonenumbers.parse(User_phone, default_region)  # VARIABLE PHONENUMBERS
+        region_code = phonenumbers.region_code_for_number(parsed_number)
+        jenis_provider = carrier.name_for_number(parsed_number, "en")
+        location = geocoder.description_for_number(parsed_number, "id")
+        is_valid_number = phonenumbers.is_valid_number(parsed_number)
+        is_possible_number = phonenumbers.is_possible_number(parsed_number)
+        formatted_number = phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+        formatted_number_for_mobile = phonenumbers.format_number_for_mobile_dialing(parsed_number, default_region,
+                                                                                    with_formatting=True)
+        number_type = phonenumbers.number_type(parsed_number)
+        timezone1 = timezone.time_zones_for_number(parsed_number)
+        timezoneF = ', '.join(timezone1)
+    except Exception as e:
+        print(f"{Re}Error parsing phone number: {e}")
+        return
 
     print(f"\n {Wh}========== {Gr}SHOW INFORMATION PHONE NUMBERS {Wh}==========")
     print(f"\n {Wh}Location             :{Gr} {location}")
@@ -126,6 +131,7 @@ def TrackLu():
     try:
         username = input(f"\n {Wh}Enter Username : {Gr}")
         results = {}
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
         social_media = [
             {"url": "https://www.facebook.com/{}", "name": "Facebook"},
             {"url": "https://www.twitter.com/{}", "name": "Twitter"},
@@ -142,23 +148,26 @@ def TrackLu():
             {"url": "https://www.medium.com/@{}", "name": "Medium"},
             {"url": "https://www.quora.com/profile/{}", "name": "Quora"},
             {"url": "https://www.flickr.com/people/{}", "name": "Flickr"},
-            {"url": "https://www.periscope.tv/{}", "name": "Periscope"},
             {"url": "https://www.twitch.tv/{}", "name": "Twitch"},
             {"url": "https://www.dribbble.com/{}", "name": "Dribbble"},
             {"url": "https://www.stumbleupon.com/stumbler/{}", "name": "StumbleUpon"},
             {"url": "https://www.ello.co/{}", "name": "Ello"},
             {"url": "https://www.producthunt.com/@{}", "name": "Product Hunt"},
-            {"url": "https://www.snapchat.com/add/{}", "name": "Snapchat"},
             {"url": "https://www.telegram.me/{}", "name": "Telegram"},
             {"url": "https://www.weheartit.com/{}", "name": "We Heart It"}
         ]
         for site in social_media:
             url = site['url'].format(username)
-            response = requests.get(url)
-            if response.status_code == 200:
-                results[site['name']] = url
-            else:
-                results[site['name']] = (f"{Ye}Username not found {Ye}!")
+            try:
+                response = requests.get(url, headers=headers, timeout=10)
+                if response.status_code == 200:
+                    results[site['name']] = url
+                else:
+                    results[site['name']] = (f"{Ye}Username not found {Ye}!")
+            except requests.exceptions.Timeout:
+                results[site['name']] = (f"{Ye}Timeout {Ye}!")
+            except Exception:
+                results[site['name']] = (f"{Ye}Error {Ye}!")
     except Exception as e:
         print(f"{Re}Error : {e}")
         return
@@ -171,8 +180,12 @@ def TrackLu():
 
 @is_option
 def showIP():
-    response = requests.get('https://api.ipify.org/')
-    Show_IP = response.text
+    try:
+        response = requests.get('https://api.ipify.org/', timeout=10)
+        Show_IP = response.text
+    except Exception as e:
+        print(f"{Re}Error: {e}")
+        return
 
     print(f"\n {Wh}========== {Gr}SHOW INFORMATION YOUR IP {Wh}==========")
     print(f"\n {Wh}[{Gr} + {Wh}] Your IP Adrress : {Gr}{Show_IP}")
